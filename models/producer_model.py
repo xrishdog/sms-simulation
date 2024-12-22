@@ -17,11 +17,12 @@ class Message:
 
 class ProducerModel:
     """
-    Generates a configurable amount of SMS messages of up to length 100
+    Generates a configurable amount of SMS messages of up to length 100.
 
     Attributes:
-        queue (asyncio.Queue): The queue to place generated messages
-        total_messages (int): Total number of messages to produce
+        queue (asyncio.Queue): The queue to handle generated messages.
+        messages_produced (int): Count of how many messages were produced.
+        running (boolean): Status of producer function.
     """
 
     def __init__(self):
@@ -32,12 +33,11 @@ class ProducerModel:
 
     def generate_message(self) -> Message:
         """
-        Generate a random message of length 1-100 and update total messages
+        Generate a random message of length 1-100 and updates total messages added to queue
 
         Returns: 
             Message: newly created Message object
         """
-        #define message to have at least one character
         msg_length = random.randint(1,100)
         characters = string.ascii_letters + string.digits + ' '
         random_msg = ''.join(random.choices(characters, k = msg_length))
@@ -51,20 +51,27 @@ class ProducerModel:
 
     async def produce_messages(self):
         """
-        Docstring here
+        Calls generator function and adds messages to queue asynchronously
         """
         try:
             self.running = True
             logger.info("Starting production of messages")
             while(self.messages_produced < config.total_messages and self.running):
                 message = self.generate_message()
-                #asynchronous operation of adding messages to queue
-                await self.queue.put(message)
-            
+                await self.queue.put(message) #asynchronous operation of adding messages to queue
+            await self.add_sentinel_vals()
             logger.info("Message production completed")
+
+
         except Exception as e:
-            logger.info(f"Failed message production: {e}")
+            logger.error(f"Failed message production: {e}")
             self.running = False
             raise 
 
-       #may need to handle sentinel value here
+    async def add_sentinel_vals(self):
+        """
+        Adds sentinel values to queue to tell consumers to stop processing
+        """
+        for _ in range(config.num_senders):
+            await self.queue.put(None)
+        logger.info("Added sentinel values to queue")
