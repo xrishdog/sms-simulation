@@ -2,7 +2,7 @@ import logging
 import random
 import asyncio
 import time
-from producer_model import Message
+from .producer_model import Message
 from config import config
 from datetime import datetime
 
@@ -49,9 +49,9 @@ class SenderModel:
                 logger.warning(f"Sender {self.id}: failed to send message")
             else:
                 self.stats['sent'] +=1
-                elapsed_time = time.perf_counter - start_time
+                elapsed_time = time.perf_counter() - start_time
                 self.stats['total_time'] += elapsed_time
-                logger.info(f"Sender {self.id}: sent message = {message['content']} successfully")
+                logger.info(f"Sender {self.id}: sent message = {message.content} successfully")
 
 
         except Exception as e:
@@ -66,7 +66,7 @@ class SenderModel:
         """
         self.running = True
         logger.info(f"Sender {self.id}: starting message processing")
-        
+
         try:
             while self.running:
                 message = await self.queue.get()

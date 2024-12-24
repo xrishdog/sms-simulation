@@ -25,8 +25,8 @@ class ProducerModel:
         running (boolean): Status of producer function.
     """
 
-    def __init__(self):
-        self.queue = asyncio.Queue()
+    def __init__(self, queue: asyncio.Queue):
+        self.queue = queue
         self.messages_produced = 0
         self.running = False
         logger.info("Initialized Producer with an empty queue")
