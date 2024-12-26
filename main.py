@@ -1,10 +1,12 @@
 import asyncio
+import time
 from models.producer_model import ProducerModel
 from models.sender_model import SenderModel
 from models.display_monitor_model import monitor_progress
 from config import config
 
 async def main():
+    start_time = time.time()
     queue = asyncio.Queue() # main datastructure to handle messages
 
     stats = {
@@ -41,6 +43,12 @@ async def main():
         pass
     
     #coudl display final stats
+    elapsed_time = time.time() - start_time
+    sent = stats.get('sent', 0)
+    failed = stats.get('failed', 0)
+    total_time = stats.get('total_time', 0.0)
+    avg_time = (total_time / sent) if sent > 0 else 0.0
+    print(f"[Monitor] {elapsed_time}s, Sent: {sent}, Failed: {failed}, Avg Time: {avg_time:.4f} seconds")
 
 if __name__ == "__main__":
     asyncio.run(main())

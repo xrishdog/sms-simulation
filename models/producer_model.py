@@ -25,10 +25,11 @@ class ProducerModel:
         running (boolean): Status of producer function.
     """
 
-    def __init__(self, queue: asyncio.Queue):
+    def __init__(self, queue: asyncio.Queue, batch_size: int = 1000):
         self.queue = queue
         self.messages_produced = 0
         self.running = False
+        self.batch_size = batch_size
         logger.info("Initialized Producer with an empty queue")
 
     def generate_message(self) -> Message:
@@ -55,10 +56,20 @@ class ProducerModel:
         """
         try:
             self.running = True
+            msgs_in_batch = 0
             logger.info("Starting production of messages")
+
             while(self.messages_produced < config.total_messages and self.running):
                 message = self.generate_message()
+                msgs_in_batch += 1
                 await self.queue.put(message) #asynchronous operation of adding messages to queue
+
+                #batch processing implmeentation to allow consumers to catch up
+                if msgs_in_batch >= self.batch_size:
+                    msgs_in_batch = 0
+                    logger.info(f"Produced batch of {self.batch_size} messages")
+                    await asyncio.sleep(0.001)
+
             await self.add_sentinel_vals()
             logger.info("Message production completed")
 
@@ -68,6 +79,10 @@ class ProducerModel:
             self.running = False
             raise 
 
+        finally:
+            logging.info("Producer has completed adding messages to queue")
+        self.running = False
+        
     async def add_sentinel_vals(self):
         """
         Adds sentinel values to queue to tell consumers to stop processing
