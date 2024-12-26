@@ -1,5 +1,5 @@
 # Testing was conducted using pytest framework in a virtual env
-# To run the tests, use the command: pytest tests/test_producer.py
+# To run the tests, use the command: python3 -m pytest tests/test_producer.py
 # Claude 3.5 was used to help generate docstrings and some base test cases
 
 import pytest
@@ -8,7 +8,6 @@ import asyncio
 import string
 from models.producer_model import ProducerModel, Message
 from config import config
-
 
 ##########################################################
 # Fixtures
@@ -27,9 +26,9 @@ def mock_config_five(mocker):
     mocker.patch.object(config, "num_senders", 2)
 
 @pytest.fixture
-def mock_config_hundred(mocker):
+def mock_config_thousand(mocker):
     """Mock configuration settings."""
-    mocker.patch.object(config, "total_messages", 100)
+    mocker.patch.object(config, "total_messages", 1000)
     mocker.patch.object(config, "num_senders", 10)
 
 @pytest.fixture
@@ -87,12 +86,25 @@ def test_generate_message_million(producer_model):
             "Content should only contain letters, numbers, and spaces"
     assert producer_model.messages_produced == 1000000
 
-# ##########################################################
-# # Message Production Tests
-# ##########################################################
+##########################################################
+# Message Production Tests
+##########################################################
+
+#following 3 tests are for the produce_messages method for 5, 100 and 1 million messages
 
 @pytest.mark.asyncio
-async def test_produce_messages_completion(producer_model, mock_config):
+async def test_produce_messages_completion_five(producer_model, mock_config_five):
+    """Test if message production completes successfully."""
+    await producer_model.produce_messages()
+    
+    assert producer_model.running, "Should set running to True during production"
+    assert producer_model.messages_produced == config.total_messages, \
+        "Should produce configured number of messages"
+    assert producer_model.queue.qsize() == config.total_messages + config.num_senders, \
+        "Queue should contain messages plus sentinel values"
+    
+@pytest.mark.asyncio
+async def test_produce_messages_completion_thousand(producer_model, mock_config_thousand):
     """Test if message production completes successfully."""
     await producer_model.produce_messages()
     
@@ -103,7 +115,18 @@ async def test_produce_messages_completion(producer_model, mock_config):
         "Queue should contain messages plus sentinel values"
 
 @pytest.mark.asyncio
-async def test_produce_messages_sentinel_values(producer_model, mock_config):
+async def test_produce_messages_completion_million(producer_model, mock_config_million):
+    """Test if message production completes successfully."""
+    await producer_model.produce_messages()
+    
+    assert producer_model.running, "Should set running to True during production"
+    assert producer_model.messages_produced == config.total_messages, \
+        "Should produce configured number of messages"
+    assert producer_model.queue.qsize() == config.total_messages + config.num_senders, \
+        "Queue should contain messages plus sentinel values"
+
+@pytest.mark.asyncio
+async def test_produce_messages_sentinel_values(producer_model, mock_config_five):
     """Test if correct number of sentinel values are added."""
     await producer_model.produce_messages()
     
@@ -126,66 +149,53 @@ async def test_produce_messages_error_handling(producer_model):
         
         assert not producer_model.running, "Should set running to False on error"
 
-# ##########################################################
-# # Queue Operation Tests
-# ##########################################################
+@pytest.mark.asyncio
+async def test_queue_operations(producer_model):
+    """Test basic queue operations during message production."""
+    config.total_messages = 3  # Small number for testing
+    await producer_model.produce_messages()
+    
+    messages = []
+    while not producer_model.queue.empty():
+        message = await producer_model.queue.get()
+        if message is not None:
+            messages.append(message)
+    
+    assert len(messages) == 3, "Should retrieve expected number of messages"
+    assert all(isinstance(m, Message) for m in messages), "All items should be Message objects"
+
+##########################################################
+# State Management Tests
+##########################################################
+
+def test_initial_state(producer_model):
+    """Test initial state of ProducerModel."""
+    assert producer_model.messages_produced == 0, "Should start with zero messages"
+    assert not producer_model.running, "Should start in non-running state"
+    assert isinstance(producer_model.queue, asyncio.Queue), "Should have a Queue instance"
+
+@pytest.mark.asyncio
+async def test_zero_messages_config(producer_model, mock_config_thousand):
+    """Test behavior when configured to produce zero messages."""
+    config.total_messages = 0
+    await producer_model.produce_messages()
+    
+    assert producer_model.messages_produced == 0, "Should not produce any messages"
+    assert producer_model.queue.qsize() == config.num_senders, \
+        "Should only contain sentinel values"
+
+@pytest.mark.asyncio
+async def test_running_state_management(producer_model, mock_config_five):
+    """Test proper management of running state."""
+    assert not producer_model.running, "Should start as not running"
+    assert config.total_messages == 5, "Should be configured for 5 messages"
+    
+    await producer_model.produce_messages()
+
+    assert not producer_model.running, "Should not be running after completion"
 
 # @pytest.mark.asyncio
-# async def test_queue_operations(producer_model):
-#     """Test basic queue operations during message production."""
-#     config.total_messages = 3  # Small number for testing
+# async def test_message_overload(producer_model):
+#     config.total_messages = 100000000000000000000
 #     await producer_model.produce_messages()
-    
-#     messages = []
-#     while not producer_model.queue.empty():
-#         message = await producer_model.queue.get()
-#         if message is not None:
-#             messages.append(message)
-    
-#     assert len(messages) == 3, "Should retrieve expected number of messages"
-#     assert all(isinstance(m, Message) for m in messages), "All items should be Message objects"
-
-# @pytest.mark.asyncio
-# async def test_add_sentinel_values(producer_model):
-#     """Test adding sentinel values to the queue."""
-#     await producer_model.add_sentinel_vals()
-    
-#     sentinel_count = 0
-#     while not producer_model.queue.empty():
-#         message = await producer_model.queue.get()
-#         if message is None:
-#             sentinel_count += 1
-    
-#     assert sentinel_count == config.num_senders, "Should add correct number of sentinel values"
-
-# ##########################################################
-# # Edge Cases and State Management
-# ##########################################################
-
-# def test_initial_state(producer_model):
-#     """Test initial state of ProducerModel."""
-#     assert producer_model.messages_produced == 0, "Should start with zero messages"
-#     assert not producer_model.running, "Should start in non-running state"
-#     assert isinstance(producer_model.queue, asyncio.Queue), "Should have a Queue instance"
-
-# @pytest.mark.asyncio
-# async def test_zero_messages_config(producer_model, mock_config):
-#     """Test behavior when configured to produce zero messages."""
-#     config.total_messages = 0
-#     await producer_model.produce_messages()
-    
-#     assert producer_model.messages_produced == 0, "Should not produce any messages"
-#     assert producer_model.queue.qsize() == config.num_senders, \
-#         "Should only contain sentinel values"
-
-# @pytest.mark.asyncio
-# async def test_running_state_management(producer_model, mock_config):
-#     """Test proper management of running state."""
-#     assert not producer_model.running, "Should start as not running"
-    
-#     production_task = asyncio.create_task(producer_model.produce_messages())
-#     await asyncio.sleep(0)  # Allow task to start
-#     assert producer_model.running, "Should be running during production"
-    
-#     await production_task
-#     assert not producer_model.running, "Should not be running after completion"
+#     assert producer_model.messages_produced == 100000000000000000000, "Should not produce any messages"
