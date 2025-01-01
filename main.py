@@ -5,6 +5,9 @@ from models.sender_model import SenderModel
 from models.display_monitor_model import monitor_progress
 from config import config
 
+import logging
+logging.disable(logging.CRITICAL)
+
 async def main():
     start_time = time.time()
     queue = asyncio.Queue() # main datastructure to handle messages
@@ -29,26 +32,26 @@ async def main():
     #initialize monitor
     monitor_task = asyncio.create_task(monitor_progress(stats))
 
-    #==============================Start Async Tasks==============================
+    #==============================Await Async Tasks==============================
 
     await producer_task
     await queue.join() #wait for senders to finish process all messages in queue
     for task in sender_tasks: #extra check to make sure that tasks have also finished
         await task 
 
-    monitor_task.cancel() #clean up resources
+    monitor_task.cancel() #manully cancel monitor task
     try:
         await monitor_task
     except asyncio.CancelledError:
         pass
     
-    #coudl display final stats
+    #display final stats
     elapsed_time = time.time() - start_time
     sent = stats.get('sent', 0)
     failed = stats.get('failed', 0)
     total_time = stats.get('total_time', 0.0)
     avg_time = (total_time / sent) if sent > 0 else 0.0
-    print(f"[Monitor] {elapsed_time}s, Sent: {sent}, Failed: {failed}, Avg Time: {avg_time:.4f} seconds")
+    print(f"[Final] {elapsed_time:.4f}s, Sent: {sent}, Failed: {failed}, Avg Time: {avg_time:.4f} seconds")
 
 if __name__ == "__main__":
     asyncio.run(main())

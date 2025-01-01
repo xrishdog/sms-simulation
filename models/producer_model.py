@@ -59,6 +59,13 @@ class ProducerModel:
             while(self.messages_produced < config.total_messages and self.running):
                 message = self.generate_message()
                 await self.queue.put(message) #asynchronous operation of adding messages to queue
+
+                #batch processing implmeentation to allow consumers to catch up
+                if msgs_in_batch >= self.batch_size:
+                    msgs_in_batch = 0
+                    logger.info(f"Produced batch of {self.batch_size} messages")
+                    await asyncio.sleep(0.001)
+
             await self.add_sentinel_vals()
             logger.info("Message production completed")
 

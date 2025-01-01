@@ -21,19 +21,19 @@ def producer_model():
 
 @pytest.fixture
 def mock_config_five(mocker):
-    """Mock configuration settings."""
+    """Mock configuration settings for five messages"""
     mocker.patch.object(config, "total_messages", 5)
     mocker.patch.object(config, "num_senders", 2)
 
 @pytest.fixture
 def mock_config_thousand(mocker):
-    """Mock configuration settings."""
+    """Mock configuration settings for a thousand messages."""
     mocker.patch.object(config, "total_messages", 1000)
     mocker.patch.object(config, "num_senders", 10)
 
 @pytest.fixture
 def mock_config_million(mocker):
-    """Mock configuration settings."""
+    """Mock configuration settings for million messages."""
     mocker.patch.object(config, "total_messages", 1000000)
     mocker.patch.object(config, "num_senders", 200)
 
@@ -97,7 +97,6 @@ async def test_produce_messages_completion_five(producer_model, mock_config_five
     """Test if message production completes successfully."""
     await producer_model.produce_messages()
     
-    assert producer_model.running, "Should set running to True during production"
     assert producer_model.messages_produced == config.total_messages, \
         "Should produce configured number of messages"
     assert producer_model.queue.qsize() == config.total_messages + config.num_senders, \
@@ -107,8 +106,7 @@ async def test_produce_messages_completion_five(producer_model, mock_config_five
 async def test_produce_messages_completion_thousand(producer_model, mock_config_thousand):
     """Test if message production completes successfully."""
     await producer_model.produce_messages()
-    
-    assert producer_model.running, "Should set running to True during production"
+
     assert producer_model.messages_produced == config.total_messages, \
         "Should produce configured number of messages"
     assert producer_model.queue.qsize() == config.total_messages + config.num_senders, \
@@ -119,7 +117,6 @@ async def test_produce_messages_completion_million(producer_model, mock_config_m
     """Test if message production completes successfully."""
     await producer_model.produce_messages()
     
-    assert producer_model.running, "Should set running to True during production"
     assert producer_model.messages_produced == config.total_messages, \
         "Should produce configured number of messages"
     assert producer_model.queue.qsize() == config.total_messages + config.num_senders, \
@@ -176,7 +173,7 @@ def test_initial_state(producer_model):
 
 @pytest.mark.asyncio
 async def test_zero_messages_config(producer_model, mock_config_thousand):
-    """Test behavior when configured to produce zero messages."""
+    """Test behavior when producing zero messages."""
     config.total_messages = 0
     await producer_model.produce_messages()
     
@@ -185,17 +182,15 @@ async def test_zero_messages_config(producer_model, mock_config_thousand):
         "Should only contain sentinel values"
 
 @pytest.mark.asyncio
-async def test_running_state_management(producer_model, mock_config_five):
+async def test_running_state_management(producer_model, mock_config_million):
     """Test proper management of running state."""
     assert not producer_model.running, "Should start as not running"
-    assert config.total_messages == 5, "Should be configured for 5 messages"
+    #assert config.total_messages == 5, "Should be configured for 5 messages"
     
-    await producer_model.produce_messages()
+    production_task = asyncio.create_task(producer_model.produce_messages())
+    await asyncio.sleep(0.1)
+    assert producer_model.running
 
+    await production_task
     assert not producer_model.running, "Should not be running after completion"
 
-# @pytest.mark.asyncio
-# async def test_message_overload(producer_model):
-#     config.total_messages = 100000000000000000000
-#     await producer_model.produce_messages()
-#     assert producer_model.messages_produced == 100000000000000000000, "Should not produce any messages"
