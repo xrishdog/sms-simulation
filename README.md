@@ -1,7 +1,8 @@
 # SMS Simulation
 
 An asynchronous message queing system that simulates SMS message generation and sending. Built with Python's asyncio framework.
-Takes advantage of the asynchronouse producer-consumer model which can distribute messages and balance load.
+The goal of this simulation is to demonstrate how message generation and send requests are handled in an efficient manner.
+The asynchronous producer-consumer model is used to distribute messages and balance load among different senders.
 
 ## System Requirements
 
@@ -81,8 +82,8 @@ python 3-m pytest tests/test_display_monitor.py
 ## Implementation Details
 
 - **ProducerModel**: Generates random messages with configurable length.
-- **SenderModel**: Processes messages with simulated network delays.
-The number of producers and consumers can be configured.
+- **SenderModel**: Processes messages with configurable network delays and failure rates.
+The number of producers and consumers can also be configured.
 - **Queue**: Central asyncio.Queue for message passing. This is centralized among models.
 - **DisplayMonitorModel**: Real-time performance statistics which can be configured to output every n seconds.
 - **Config**: Centralized system parameters
