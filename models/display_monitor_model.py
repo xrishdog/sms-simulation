@@ -5,6 +5,12 @@ from config import config
 import time
 
 def validate_stats(stats: dict):
+    """
+    Check to ensure that stats dictionary has the required keys for stats monitoring
+
+    Attributes:
+        stats (dict): A dictionary of relevant stats to be displayed
+    """
     required_keys = {'sent', 'failed', 'total_time'}
     missing_keys = required_keys - stats.keys()
     if missing_keys:
