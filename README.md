@@ -52,6 +52,8 @@ sms-simulation/
 │   ├── test_producer.py
 │   ├── test_sender.py
 │   └── test_display_monitor.py
+├── docs/
+│   └── technical_documentation.pdf
 ├── config.py                 # System configuration
 ├── main.py                   # Entry point
 └── README.md
