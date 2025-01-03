@@ -3,10 +3,11 @@
 An asynchronous message queing system that simulates SMS message generation and sending. Built with Python's asyncio framework.
 The goal of this simulation is to demonstrate how message generation and send requests are handled in an efficient manner.
 The asynchronous producer-consumer model is used to distribute messages and balance load among different senders.
+Documentation can be viewed in ```docs/technical_documentation.pdf```
 
 ## System Requirements
 
-- Python 3.7+
+- Python 3.9+
 - pytest for running tests
 
 
@@ -53,7 +54,6 @@ sms-simulation/
 │   └── test_display_monitor.py
 ├── config.py                 # System configuration
 ├── main.py                   # Entry point
-├── requirements.txt
 └── README.md
 ```
 
@@ -68,7 +68,7 @@ Run specific test files:
 ```bash
 python3 -m pytest tests/test_sender.py
 python3 -m pytest tests/test_producer.py
-python 3-m pytest tests/test_display_monitor.py
+python3 -m pytest tests/test_display_monitor.py
 ```
 
 ### Test Categories
