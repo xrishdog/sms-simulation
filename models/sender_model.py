@@ -52,7 +52,7 @@ class SenderModel:
                 elapsed_time = time.perf_counter() - start_time
                 self.stats['total_time'] += elapsed_time
                 logger.info(f"Sender {self.id}: sent message = {message.content} successfully")
-                print(f"Sender {self.id}: sent message = {message.content} successfully")
+                #print(f"Sender {self.id}: sent message = {message.content} successfully")
 
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
